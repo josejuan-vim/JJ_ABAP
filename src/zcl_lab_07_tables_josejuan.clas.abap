@@ -196,12 +196,117 @@ ELSE.
 
 ENDIF.
 
+
+
+*5. READ TABLE con índice **************************************
+
+DATA: lv_airport_from_id TYPE /dmo/connection-airport_from_id.
+
+DATA: ls_spfli LIKE LINE OF mt_spfli.
+
+READ TABLE mt_spfli INTO ls_spfli INDEX 1.
+
+IF sy-subrc = 0.
+
+    lv_airport_from_id = ls_spfli-airport_from_id.
+    out->write( |Primera fila : { lv_airport_from_id } | ).
+
+ELSE.
+    out->write( 'No existe la primera fila' ).
+
+ENDIF.
+
+
+*6. READ TABLE con clave **************************************
+
+READ TABLE mt_spfli INTO ls_spfli
+    WITH KEY airport_to_id = 'FRA'.
+
+IF sy-subrc = 0.
+    lv_airport_from_id = ls_spfli-airport_from_id.
+    out->write( |Ciudad de partida : { lv_airport_from_id } | ).
+
+ELSE.
+    out->write( 'No existe ciudad de partida con destino a Frankfurt' ).
+
+ENDIF.
+
+
+*7. Chequeo de registros **************************************
+
+CLEAR mt_spfli.
+
+CLEAR ls_spfli.
+
+*Obtener registros con connection_id mayor que '0400'
+SELECT *
+FROM /dmo/connection
+WHERE connection_id GT '0400'
+INTO TABLE @mt_spfli.
+
+*Validar dentro de la tabla interna el valor “0407”.
+READ TABLE mt_spfli INTO ls_spfli
+    WITH KEY connection_id = '0407'.
+
+IF sy-subrc = 0.
+    out->write( 'Existe la conexión 0407' ).
+
+ELSE.
+    out->write( 'No existe la conexión 0407' ).
+
+ENDIF.
+
+
+
+*8. Índice de un registro **************************************
+
+CLEAR ls_spfli.
+
+DATA(lv_index) = 0.
+
+"Obtener índice del registro de la tabla interna donde la conexión es 0407.
+READ TABLE mt_spfli INTO ls_spfli
+     WITH KEY connection_id = '0407'.
+
+IF sy-subrc = 0.
+   lv_index = sy-tabix.
+    out->write( |Índice de la conexión 0407: { lv_index } | ).
+
+ELSE.
+    out->write( 'No encontrado' ).
+
+ENDIF.
+
+
+*8. Sentencia LOOP **************************************
+
+DATA: mt_km TYPE STANDARD TABLE OF /dmo/connection.
+
+CLEAR mt_spfli.
+
+CLEAR ls_spfli.
+
+CLEAR mt_km.
+
+*Obtener los registros desde la tabla interna
+SELECT *
+FROM /dmo/connection
+INTO TABLE @mt_spfli.
+
+*Recorrer la tabla
+LOOP AT mt_spfli INTO ls_spfli
+    WHERE distance_unit = 'KM'.
+
+    APPEND ls_spfli TO mt_km.
+
+ENDLOOP.
+
+*Mostrar solo los registros con distancia 'KM'.
 out->write(
     EXPORTING
-        data = mt_spfli
-        name = 'Vuelos LH'
+        data = mt_km
+        name = 'Conexiones en KM'
 ).
-
 
   ENDMETHOD.
 
